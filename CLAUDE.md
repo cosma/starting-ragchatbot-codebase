@@ -30,6 +30,11 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 
 There is no test suite, linter, or build step configured in this repo currently.
 
+## Development conventions
+
+- Always use `uv` for dependency management and running commands (`uv sync`, `uv add`, `uv run ...`) — never call `pip` directly.
+- Use descriptive variable names; avoid abbreviations or terse identifiers.
+
 ## Architecture
 
 Request flow: `frontend/script.js` → `POST /api/query` (`backend/app.py`) → `RAGSystem.query()` (`backend/rag_system.py`) → `AIGenerator` (`backend/ai_generator.py`) → Claude, with tool calling into `CourseSearchTool` (`backend/search_tools.py`) → `VectorStore` (`backend/vector_store.py`) → ChromaDB.
