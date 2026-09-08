@@ -32,7 +32,7 @@ There is no test suite, linter, or build step configured in this repo currently.
 
 ## Development conventions
 
-- Always use `uv` for dependency management and running commands (`uv sync`, `uv add`, `uv run ...`) — never call `pip` directly.
+- Always use `uv` for dependency management and for running any Python code (`uv sync`, `uv add`, `uv run python ...`, `uv run uvicorn ...`) — never call `pip` or bare `python`/`python3` directly.
 - Use descriptive variable names; avoid abbreviations or terse identifiers.
 
 ## Architecture
