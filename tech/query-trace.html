@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Assistant Query Trace</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --paper:      #F2F5F4;
+    --surface:    #FFFFFF;
+    --ink:        #16211E;
+    --ink-soft:   #4B5B57;
+    --line:       #D2DBD8;
+    --accent:     #0E6F63;
+    --accent-strong:#0A5951;
+    --accent-soft: #DCEEEA;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:      #12181A;
+      --surface:    #182022;
+      --ink:        #E9F1EF;
+      --ink-soft:   #9FB3AE;
+      --line:       #2B3638;
+      --accent:     #4FCFC0;
+      --accent-strong:#7FE0D3;
+      --accent-soft: #16302C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:      #12181A;
+    --surface:    #182022;
+    --ink:        #E9F1EF;
+    --ink-soft:   #9FB3AE;
+    --line:       #2B3638;
+    --accent:     #4FCFC0;
+    --accent-strong:#7FE0D3;
+    --accent-soft: #16302C;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height:1.55;
+  }
+  .page{ max-width:960px; margin:0 auto; padding:56px 24px 64px; }
+  .prose{ max-width:660px; }
+  .kicker{
+    font-family:"IBM Plex Mono", ui-monospace, monospace;
+    font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent-strong); margin:0 0 10px;
+  }
+  h1{ font-size:clamp(28px,4vw,38px); font-weight:700; letter-spacing:-0.01em; margin:0 0 6px; text-wrap:balance; }
+  .subtitle{ font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin:0 0 20px; }
+  .dek{ font-size:16.5px; color:var(--ink-soft); margin:0 0 44px; max-width:60ch; }
+  .dek strong{ color:var(--ink); font-weight:600; }
+
+  figure{ margin:0 0 40px; }
+  .figure-wrap{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:20px 18px 12px; overflow-x:auto;
+  }
+  #chart{ display:block; width:100%; height:auto; min-width:720px; }
+  figcaption{ font-size:13.5px; color:var(--ink-soft); margin-top:14px; max-width:64ch; }
+
+  h2{ font-size:18px; font-weight:600; margin:0 0 10px; }
+  .note{ margin:0 0 40px; }
+  .note p{ margin:0 0 10px; font-size:15px; color:var(--ink-soft); max-width:62ch; }
+  .note code{
+    font-family:"IBM Plex Mono", monospace; font-size:0.92em;
+    background:var(--accent-soft); color:var(--accent-strong); padding:1px 5px; border-radius:4px;
+  }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:22px; align-items:center;
+    padding:14px 16px; border:1px solid var(--line); border-radius:12px; margin:0 0 16px;
+  }
+  .legend-item{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); }
+  .legend-item svg{ display:block; flex:none; }
+  .hint{ font-size:12.5px; color:var(--ink-soft); margin:0 0 40px; }
+
+  footer{
+    border-top:1px solid var(--line); padding-top:18px;
+    font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--ink-soft);
+  }
+
+  /* diagram element styles, driven by D3-assigned classes */
+  .lane-line{ stroke:var(--line); stroke-width:1.4; stroke-dasharray:2 5; transition:opacity .15s; }
+  .lane-pill{ fill:var(--surface); stroke:var(--line); cursor:pointer; transition:stroke .15s; }
+  .lane-pill:hover{ stroke:var(--accent); }
+  .pillname{ font-family:"IBM Plex Sans", sans-serif; font-size:14px; font-weight:600; fill:var(--ink); text-anchor:middle; pointer-events:none; }
+  .pillsub{ font-family:"IBM Plex Mono", monospace; font-size:11px; fill:var(--ink-soft); text-anchor:middle; pointer-events:none; }
+
+  .evt-line{ fill:none; stroke-width:1.7; transition:opacity .15s, stroke-width .15s; }
+  .evt-line.call{ stroke:var(--ink); }
+  .evt-line.ret{ stroke:var(--ink); stroke-dasharray:6 4; }
+  .evt-line.accent.call{ stroke:var(--accent); }
+  .evt-line.accent.ret{ stroke:var(--accent); stroke-dasharray:6 4; }
+  .evt.dim .evt-line{ opacity:.15; }
+  .evt.active .evt-line{ opacity:1; stroke-width:2.4; }
+  .lane-line.dim{ opacity:.15; }
+
+  .lbl{ font-family:"IBM Plex Sans", sans-serif; font-size:13px; fill:var(--ink); text-anchor:middle; transition:opacity .15s; }
+  .lbl.accent{ fill:var(--accent-strong); }
+  .lbl-sub{ font-family:"IBM Plex Mono", monospace; font-size:11px; fill:var(--ink-soft); text-anchor:middle; transition:opacity .15s; }
+  .evt.dim .lbl, .evt.dim .lbl-sub{ opacity:.2; }
+
+  .note-box{ fill:var(--surface); stroke:var(--line); stroke-width:1.2; }
+  .note-text{ font-family:"IBM Plex Mono", monospace; font-size:10.8px; fill:var(--ink-soft); }
+  .tag-pill{ fill:var(--paper); stroke:var(--accent); stroke-width:1.2; }
+  .tag-text{ font-family:"IBM Plex Mono", monospace; font-size:10.5px; letter-spacing:.06em; fill:var(--accent-strong); text-anchor:middle; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="prose">
+    <p class="kicker">System trace</p>
+    <h1>Query Trace</h1>
+    <p class="subtitle">Course Materials Assistant — backend request lifecycle</p>
+    <p class="dek">
+      From a typed question to a cited answer: how one request moves through
+      session memory, a <strong>two-call round trip with Claude</strong>,
+      and a filtered ChromaDB search — before rendering back in the chat window.
+    </p>
+  </div>
+
+  <figure>
+    <div class="figure-wrap">
+      <svg id="chart" viewBox="0 0 1100 800" role="img"
+           aria-label="Sequence diagram showing a chat query traveling from the browser through the FastAPI backend, session history lookup, two Claude API calls separated by a ChromaDB search tool call, and back to the browser as a rendered answer with sources.">
+      </svg>
+    </div>
+    <figcaption>
+      Two calls to Claude bracket a single ChromaDB search: the first returns a
+      <code style="background:none;color:inherit;padding:0;font-family:inherit;">tool_use</code> request instead of an
+      answer, the backend runs the search itself, and the second call gets the results
+      injected as a tool result with no tools offered back. Hover a lane's name to trace only its calls.
+    </figcaption>
+  </figure>
+
+  <div class="prose note">
+    <h2>Why the round trip is capped at one search</h2>
+    <p>
+      <code>AIGenerator._handle_tool_execution()</code> in <code>ai_generator.py</code> only ever
+      makes one extra call after a <code>tool_use</code> response — it executes whatever tools Claude
+      requested, then calls the API again <em>without</em> passing <code>tools</code>. Claude has no way
+      to ask for a second search on that turn, even if the first result was ambiguous or covered only
+      one of two courses a question compared.
+    </p>
+    <p>
+      The system prompt reinforces the same limit in words — <code>"One search per query maximum"</code> —
+      so the constraint is enforced twice: once as an instruction Claude is trusted to follow, and once
+      structurally, since the second API call has nothing to call even if it tried.
+    </p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <svg width="34" height="12" viewBox="0 0 34 12"><line x1="1" y1="6" x2="30" y2="6" stroke="var(--ink)" stroke-width="1.8"/><polygon points="30,2.5 34,6 30,9.5" fill="var(--ink)"/></svg>
+      call
+    </div>
+    <div class="legend-item">
+      <svg width="34" height="12" viewBox="0 0 34 12"><line x1="1" y1="6" x2="30" y2="6" stroke="var(--ink)" stroke-width="1.8" stroke-dasharray="5 4"/><polygon points="30,2.5 34,6 30,9.5" fill="var(--ink)"/></svg>
+      return value
+    </div>
+    <div class="legend-item">
+      <svg width="34" height="12" viewBox="0 0 34 12"><line x1="1" y1="6" x2="30" y2="6" stroke="var(--accent)" stroke-width="1.8"/><polygon points="30,2.5 34,6 30,9.5" fill="var(--accent)"/></svg>
+      inside the Claude round trip
+    </div>
+  </div>
+  <p class="hint">Diagram rendered with D3.js from a data-driven layout — see <code style="font-family:'IBM Plex Mono',monospace;background:none;color:inherit;">lanes</code> / <code style="font-family:'IBM Plex Mono',monospace;background:none;color:inherit;">events</code> in the script below.</p>
+
+  <footer>
+    traced from app.py · rag_system.py · ai_generator.py · search_tools.py · vector_store.py · session_manager.py · script.js
+  </footer>
+
+</div>
+
+<script>
+(function(){
+
+  // ---- data: lanes (participants) ----
+  const lanes = [
+    { id:'browser', x:80,   name:'Browser',      sub:['script.js'],                 w:90  },
+    { id:'backend', x:315,  name:'Backend',       sub:['app.py','rag_system.py'],    w:90  },
+    { id:'session', x:550,  name:'Session Store', sub:['session_manager.py'],        w:140 },
+    { id:'claude',  x:785,  name:'Claude',        sub:['Anthropic API'],             w:86  },
+    { id:'search',  x:1020, name:'Search Tool',   sub:['search_tools.py','+ ChromaDB'], w:126 }
+  ];
+  const laneById = Object.fromEntries(lanes.map(l => [l.id, l]));
+
+  // ---- data: events (arrows down the timeline) ----
+  const events = [
+    { y:130, from:'browser', to:'backend', type:'call', label:'POST /api/query', sub:'{ query, session_id }' },
+    { y:188, from:'backend', to:'session', type:'call', label:'get_conversation_history(session_id)' },
+    { y:246, from:'session', to:'backend', type:'ret',  label:'history text — or None' },
+    { y:304, from:'backend', to:'claude',  type:'call', accent:true, labelX:620, label:'messages.create() — call 1, tools attached' },
+    { y:362, from:'claude',  to:'backend', type:'ret',  accent:true, labelX:620, label:'stop_reason: tool_use', sub:'search_course_content(query, course_name?, lesson_number?)' },
+    { y:420, from:'backend', to:'search',  type:'call', accent:true, labelX:900, label:'execute_tool(name, **input)' },
+    { y:500, from:'search',  to:'backend', type:'ret',  accent:true, labelX:900, label:'chunks + metadata, formatted', sub:'tool_manager tracks last_sources[]' },
+    { y:558, from:'backend', to:'claude',  type:'call', accent:true, labelX:620, label:'messages.create() — call 2, no tools' },
+    { y:616, from:'claude',  to:'backend', type:'ret',  accent:true, labelX:620, label:'final answer text' },
+    { y:674, from:'backend', to:'session', type:'call', label:'add_exchange(query, answer)' },
+    { y:732, from:'backend', to:'browser', type:'ret',  label:'200 OK — QueryResponse', sub:'{ answer, sources[], session_id }' }
+  ];
+
+  const notes = [
+    { y:434, h:48, lane:'search', anchorX:840, w:220,
+      lines:['① course_catalog → resolve title', '② course_content → query(where, top‑k)'] }
+  ];
+
+  const LIFELINE_TOP = 96, LIFELINE_BOTTOM = 772;
+
+  const svg = d3.select('#chart');
+
+  // ---- highlight zone: computed from the accent events' own bounding box ----
+  const accentEvents = events.filter(e => e.accent);
+  const accentXs = accentEvents.flatMap(e => [laneById[e.from].x, laneById[e.to].x]);
+  const accentYs = accentEvents.map(e => e.y);
+  const rectX0 = d3.min(accentXs) - 57;
+  const rectX1 = d3.max(accentXs) + 58;
+  const rectY0 = d3.min(accentYs) - 30;
+  const rectY1 = d3.max(accentEvents.map(e => e.y + (e.sub ? 36 : 26)));
+
+  svg.append('rect')
+    .attr('x', rectX0).attr('y', rectY0)
+    .attr('width', rectX1 - rectX0).attr('height', rectY1 - rectY0)
+    .attr('rx', 16)
+    .attr('fill', 'var(--accent-soft)');
+
+  const tagCx = (rectX0 + rectX1) / 2;
+  svg.append('rect')
+    .attr('class', 'tag-pill')
+    .attr('x', tagCx - 115).attr('y', rectY0 - 26)
+    .attr('width', 230).attr('height', 21).attr('rx', 10.5);
+  svg.append('text')
+    .attr('class', 'tag-text')
+    .attr('x', tagCx).attr('y', rectY0 - 11.5)
+    .text('ONE SEARCH PER QUESTION');
+
+  // ---- arrowhead markers ----
+  const defs = svg.append('defs');
+  [['arrIn','var(--ink)'], ['arrAcc','var(--accent)']].forEach(([id, color]) => {
+    defs.append('marker')
+      .attr('id', id).attr('markerWidth', 9).attr('markerHeight', 9)
+      .attr('refX', 7).attr('refY', 4.5).attr('orient', 'auto')
+      .append('polygon')
+      .attr('points', '0,0 9,4.5 0,9')
+      .attr('fill', color);
+  });
+
+  // ---- lifelines, one per lane ----
+  const laneLines = svg.selectAll('.lane-line')
+    .data(lanes, d => d.id)
+    .join('line')
+    .attr('class', 'lane-line')
+    .attr('x1', d => d.x).attr('x2', d => d.x)
+    .attr('y1', LIFELINE_TOP).attr('y2', LIFELINE_BOTTOM);
+
+  // ---- column headers (pill + labels), driven by lane data ----
+  const laneG = svg.selectAll('.lane-g')
+    .data(lanes, d => d.id)
+    .join('g')
+    .attr('class', 'lane-g');
+
+  laneG.append('rect')
+    .attr('class', 'lane-pill')
+    .attr('x', d => d.x - d.w / 2).attr('y', 26)
+    .attr('width', d => d.w).attr('height', 38).attr('rx', 19);
+
+  laneG.append('text')
+    .attr('class', 'pillname')
+    .attr('x', d => d.x).attr('y', 50)
+    .text(d => d.name);
+
+  laneG.each(function(d) {
+    d.sub.forEach((line, i) => {
+      d3.select(this).append('text')
+        .attr('class', 'pillsub')
+        .attr('x', d.x).attr('y', 80 + i * 14)
+        .text(line);
+    });
+  });
+
+  // ---- events: one <g class="evt"> per row, holding line + label(s) ----
+  const evtG = svg.selectAll('.evt')
+    .data(events)
+    .join('g')
+    .attr('class', d => `evt${d.accent ? ' evt-accent' : ''}`)
+    .attr('data-from', d => d.from)
+    .attr('data-to', d => d.to);
+
+  evtG.append('line')
+    .attr('class', d => `evt-line ${d.type}${d.accent ? ' accent' : ''}`)
+    .attr('x1', d => laneById[d.from].x).attr('x2', d => laneById[d.to].x)
+    .attr('y1', d => d.y).attr('y2', d => d.y)
+    .attr('marker-end', d => `url(#${d.accent ? 'arrAcc' : 'arrIn'})`);
+
+  evtG.append('text')
+    .attr('class', d => `lbl${d.accent ? ' accent' : ''}`)
+    .attr('x', d => d.labelX ?? (laneById[d.from].x + laneById[d.to].x) / 2)
+    .attr('y', d => d.y - 8)
+    .text(d => d.label);
+
+  evtG.filter(d => d.sub).append('text')
+    .attr('class', 'lbl-sub')
+    .attr('x', d => d.labelX ?? (laneById[d.from].x + laneById[d.to].x) / 2)
+    .attr('y', d => d.y + 16)
+    .text(d => d.sub);
+
+  // ---- internal notes (e.g. the two ChromaDB collections hit during search) ----
+  const noteG = svg.selectAll('.note-g')
+    .data(notes)
+    .join('g')
+    .attr('class', 'note-g');
+
+  noteG.append('rect')
+    .attr('class', 'note-box')
+    .attr('x', d => d.anchorX)
+    .attr('y', d => d.y).attr('width', d => d.w).attr('height', d => d.h)
+    .attr('rx', 8);
+
+  noteG.each(function(d) {
+    d.lines.forEach((line, i) => {
+      d3.select(this).append('text')
+        .attr('class', 'note-text')
+        .attr('x', d.anchorX + 10).attr('y', d.y + 18 + i * 16)
+        .text(line);
+    });
+  });
+
+  // ---- interaction: hovering a lane's pill traces its calls ----
+  laneG.on('mouseenter', (event, d) => {
+    evtG.classed('active', e => e.from === d.id || e.to === d.id);
+    evtG.classed('dim', e => e.from !== d.id && e.to !== d.id);
+    laneLines.classed('dim', l => l.id !== d.id);
+  });
+  laneG.on('mouseleave', () => {
+    evtG.classed('active', false).classed('dim', false);
+    laneLines.classed('dim', false);
+  });
+
+})();
+</script>
+</body>
+</html>
