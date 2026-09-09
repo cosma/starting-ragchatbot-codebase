@@ -1,0 +1,20 @@
+services:
+  rag:
+    build: .
+    image: course-rag:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persist the ChromaDB vector store across container restarts.
+      - chroma_data:/app/backend/chroma_db
+      # Cache the downloaded embedding model so it's fetched only once.
+      - hf_cache:/app/.cache/huggingface
+      # Drop new course transcripts in ./docs; they are ingested on startup.
+      - ./docs:/app/docs
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+  hf_cache:

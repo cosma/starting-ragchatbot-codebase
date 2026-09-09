@@ -54,3 +54,31 @@ The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
 
+### Running with Docker
+
+Requires Docker with Compose. You still need a `.env` file at the project root
+containing `ANTHROPIC_API_KEY`.
+
+```bash
+docker compose up --build
+```
+
+The app is served at `http://localhost:8000`. Notes:
+
+- On first startup the container downloads the `all-MiniLM-L6-v2` embedding model
+  from HuggingFace (~90 MB). It is cached in the `hf_cache` volume, so subsequent
+  starts are offline and fast.
+- The ChromaDB vector store is persisted in the `chroma_data` volume.
+- `./docs` is mounted into the container; any `.txt`/`.pdf`/`.docx` course files
+  placed there are ingested on the next startup.
+
+To run the image directly without Compose:
+
+```bash
+docker build -t course-rag .
+docker run --rm -p 8000:8000 --env-file .env \
+  -v course-rag-chroma:/app/backend/chroma_db \
+  -v course-rag-hf:/app/.cache/huggingface \
+  course-rag
+```
+

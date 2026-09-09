@@ -30,6 +30,12 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 
 There is no test suite, linter, or build step configured in this repo currently.
 
+Run in a container (needs `.env` with `ANTHROPIC_API_KEY` at the project root):
+```bash
+docker compose up --build
+```
+`Dockerfile` is a single-stage `uv` build (single-stage on purpose — the target Docker VM has only 2 GiB RAM and a multi-stage venv copy OOM-crashed it). The container runs `uvicorn` from `/app/backend` (no `--reload`). The embedding model downloads on first start into the `hf_cache` volume; ChromaDB persists in `chroma_data`; `./docs` is bind-mounted for ingestion.
+
 ## Development conventions
 
 - Always use `uv` for dependency management and for running any Python code (`uv sync`, `uv add`, `uv run python ...`, `uv run uvicorn ...`) — never call `pip` or bare `python`/`python3` directly.

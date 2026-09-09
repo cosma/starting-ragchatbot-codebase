@@ -1,0 +1,28 @@
+# Version control / tooling
+.git
+.gitignore
+.claude
+tech
+.idea
+.vscode
+*.swp
+*.swo
+
+# Secrets — provided at runtime via env_file / environment
+.env
+backend/.env
+
+# Local Python artifacts
+.venv
+venv
+env
+**/__pycache__
+*.py[cod]
+
+# Local vector store — recreated inside the container / volume
+backend/chroma_db
+chroma_db
+
+# OS cruft
+.DS_Store
+Thumbs.db

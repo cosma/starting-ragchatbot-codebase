@@ -8,8 +8,21 @@ dependencies = [
     "chromadb==1.0.15",
     "anthropic==0.58.2",
     "sentence-transformers==5.0.0",
+    "torch==2.7.1",
     "fastapi==0.116.1",
     "uvicorn==0.35.0",
     "python-multipart==0.0.20",
     "python-dotenv==1.1.1",
 ]
+
+# The only torch use here is CPU inference for sentence-transformers embeddings.
+# On Linux (the Docker image), pull the CPU-only wheels and skip the ~3 GB of
+# CUDA/nvidia packages the default PyPI torch drags in. Other platforms keep
+# resolving torch from PyPI unchanged.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
