@@ -10,7 +10,9 @@ class Config:
     """Configuration settings for the RAG system"""
     # Anthropic API settings
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+    # Keep this on a cheap model (Haiku). Override via the ANTHROPIC_MODEL env
+    # var / .env if ever needed — don't hardcode a pricier model here.
+    ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
     
     # Embedding model settings
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"

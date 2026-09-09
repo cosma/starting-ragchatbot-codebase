@@ -72,6 +72,6 @@ On server startup (`app.py` `startup_event`), `docs/` is scanned and any `.pdf`/
 
 **Session/conversation state** (`backend/session_manager.py`) is in-memory only (a plain dict keyed by session ID, not persisted), capped at `MAX_HISTORY * 2` messages (user+assistant pairs).
 
-**Config is centralized** in `backend/config.py` (a single dataclass instance `config`): chunk size/overlap, embedding model name, Anthropic model name, max search results, max history length, ChromaDB path. Change tuning parameters there rather than inline.
+**Config is centralized** in `backend/config.py` (a single dataclass instance `config`): chunk size/overlap, embedding model name, Anthropic model name, max search results, max history length, ChromaDB path. Change tuning parameters there rather than inline. `ANTHROPIC_MODEL` defaults to a cheap Haiku model and is overridable via the `ANTHROPIC_MODEL` env var / `.env` — keep it on a cheap model.
 
 **Frontend is unbuilt** — `frontend/` is served directly as static files by FastAPI (mounted at `/` via `StaticFiles`, `app.py`), no bundler/framework. Cache-busting for dev is handled with explicit `Cache-Control: no-cache` headers on the static file handler and a `?v=N` query string on the CSS link in `index.html` — bump that version string when editing `style.css` if changes aren't showing up.

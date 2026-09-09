@@ -34,9 +34,9 @@ Provide only the direct answer to what was asked.
         self.model = model
         
         # Pre-build base API parameters
+        # (newer Claude models reject the `temperature` param, so it's omitted)
         self.base_params = {
             "model": self.model,
-            "temperature": 0,
             "max_tokens": 800
         }
     
