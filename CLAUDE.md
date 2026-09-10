@@ -37,7 +37,7 @@ docker compose up           # subsequent runs — code is live-mounted, no rebui
 ```
 
 There are **two Dockerfiles**:
-- `Dockerfile.dev` — used by `docker compose`. Bakes in **only the dependency venv**; `docker-compose.yml` bind-mounts `./backend` and `./frontend` into the container and runs `uvicorn --reload`, so host edits take effect without rebuilding. Rebuild only when `pyproject.toml` / `uv.lock` change. Reloader is uvicorn's polling `StatReload` (plain `uvicorn`, no `[standard]` extra) which works over Colima's sshfs mount.
+- `Dockerfile.dev` — used by `docker compose`. Bakes in **only the dependency venv**; `docker-compose.yml` bind-mounts `./backend` and `./frontend` into the container and runs `uvicorn --reload`, so host edits take effect without rebuilding. Rebuild only when `pyproject.toml` / `uv.lock` change. `--reload` uses watchfiles (inotify), which doesn't see host edits across Colima's sshfs mount, so `Dockerfile.dev` sets `WATCHFILES_FORCE_POLLING=true` to make the reloader stat-poll instead.
 - `Dockerfile` — production image, copies the code in (`COPY . /app`), no `--reload`, self-contained. Not used by compose; build explicitly: `docker build -f Dockerfile -t course-rag:prod .`.
 
 Both are single-stage `uv` builds (single-stage on purpose — the target Docker VM has only 2 GiB RAM and a multi-stage venv copy OOM-crashed it; a heavy `docker compose up --build` while other Docker work runs can still OOM the VM). Lines 8-27 of the two files are kept byte-identical so the heavy `uv sync` layer is shared from the build cache. The embedding model downloads on first start into the `hf_cache` volume; ChromaDB persists in `chroma_data`; `./docs` is bind-mounted for ingestion.

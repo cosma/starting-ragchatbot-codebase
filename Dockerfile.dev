@@ -41,6 +41,10 @@ WORKDIR /app/backend
 
 EXPOSE 8000
 
-# Plain uvicorn (no [standard] extra) => StatReload, a polling reloader that works
-# over Colima's sshfs mount where inotify events don't propagate.
+# uvicorn --reload uses watchfiles, which watches via inotify. Colima's sshfs
+# mount does not propagate inotify events from the host, so host edits would never
+# trigger a reload. Force watchfiles into stat-polling mode, which does see the
+# changes. Dev-only — the production Dockerfile runs without --reload.
+ENV WATCHFILES_FORCE_POLLING=true
+
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
