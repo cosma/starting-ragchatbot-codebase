@@ -3,22 +3,28 @@ name = "starting-codebase"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "chromadb==1.0.15",
     "anthropic==0.58.2",
     "sentence-transformers==5.0.0",
-    "torch==2.7.1",
+    "torch==2.0.1; python_version < '3.13'",
     "fastapi==0.116.1",
     "uvicorn==0.35.0",
     "python-multipart==0.0.20",
     "python-dotenv==1.1.1",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+]
+
 # The only torch use here is CPU inference for sentence-transformers embeddings.
 # On Linux (the Docker image), pull the CPU-only wheels and skip the ~3 GB of
 # CUDA/nvidia packages the default PyPI torch drags in. Other platforms keep
 # resolving torch from PyPI unchanged.
+# For macOS Intel, torch 2.7.1 has no wheel; use a version that does (e.g. 2.0.0)
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
@@ -26,3 +32,6 @@ torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
