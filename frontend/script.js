@@ -5,7 +5,38 @@ const API_URL = '/api';
 let currentSessionId = null;
 
 // DOM elements
-let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton;
+let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton, themeToggle;
+
+// Theme management
+const THEME_STORAGE_KEY = 'course-rag-theme';
+const LIGHT_THEME = 'light';
+const DARK_THEME = 'dark';
+
+// Initialize theme on page load before DOM renders
+function initializeTheme() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (prefersDark ? DARK_THEME : LIGHT_THEME);
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    if (theme === LIGHT_THEME) {
+        document.documentElement.classList.add('light-theme');
+    } else {
+        document.documentElement.classList.remove('light-theme');
+    }
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
+function toggleTheme() {
+    const isDarkMode = document.documentElement.classList.contains('light-theme');
+    const newTheme = isDarkMode ? DARK_THEME : LIGHT_THEME;
+    applyTheme(newTheme);
+}
+
+// Apply theme before rendering
+initializeTheme();
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     totalCourses = document.getElementById('totalCourses');
     courseTitles = document.getElementById('courseTitles');
     newChatButton = document.getElementById('newChatButton');
+    themeToggle = document.getElementById('themeToggle');
 
     setupEventListeners();
     createNewSession();
@@ -24,6 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Event Listeners
 function setupEventListeners() {
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
+
     // Chat functionality
     sendButton.addEventListener('click', sendMessage);
     chatInput.addEventListener('keypress', (e) => {
@@ -32,7 +67,6 @@ function setupEventListeners() {
 
     // New chat
     newChatButton.addEventListener('click', startNewChat);
-
 
     // Suggested questions
     document.querySelectorAll('.suggested-item').forEach(button => {
