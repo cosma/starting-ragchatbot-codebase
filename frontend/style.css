@@ -490,8 +490,6 @@ a.source-pill:hover {
 
 /* New Chat button - matches sidebar header typography */
 .new-chat-button {
-    width: 100%;
-    text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
@@ -503,6 +501,10 @@ a.source-pill:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: color 0.2s ease;
+    text-align: left;
+    list-style: none;
+    display: block;
+    user-select: none;
 }
 
 .new-chat-button:hover,
