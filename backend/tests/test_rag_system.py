@@ -6,6 +6,9 @@ from rag_system import RAGSystem
 from session_manager import SessionManager
 
 
+pytestmark = pytest.mark.integration
+
+
 class TestRAGSystemConfigRegression:
     """Regression test: MAX_RESULTS must be > 0."""
 

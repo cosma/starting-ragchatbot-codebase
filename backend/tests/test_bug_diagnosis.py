@@ -3,11 +3,14 @@ Diagnosis script that shows the bug by static code analysis.
 Run with: python3 backend/tests/test_bug_diagnosis.py
 """
 
+import pytest
 import os
 import sys
 
 # Add backend to path so we can import config
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+pytestmark = pytest.mark.integration
 
 
 def test_config_max_results_is_zero():
