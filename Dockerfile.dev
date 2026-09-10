@@ -1,11 +1,13 @@
-# Production image: copies the application code in (self-contained, no bind mounts).
-# For local development, `docker compose` uses Dockerfile.dev instead, which leaves
-# the code out and bind-mounts ./backend and ./frontend for live reload.
+# Dev image for local `docker compose`. The application code is deliberately NOT
+# copied in — docker-compose.yml bind-mounts ./backend and ./frontend so edits on
+# the host take effect live (uvicorn runs with --reload, no rebuild needed).
+# Only the dependency venv is baked into the image.
 #
-# Single-stage build. The Docker VM on the target machine is memory-constrained,
-# so we avoid a multi-stage `COPY --from=builder` of the ~1 GB venv (that step
-# OOM-crashed the VM) and skip importing torch at build time. The embedding
-# model is downloaded on first container start instead (cached in a volume).
+# The production image that copies the code in is Dockerfile (build it explicitly:
+# `docker build -f Dockerfile -t course-rag:prod .`).
+#
+# Lines 8-27 are kept byte-identical to Dockerfile so the (heavy) `uv sync` layer
+# is shared from the build cache instead of resolved twice.
 FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -29,11 +31,9 @@ USER nonroot
 COPY --chown=nonroot:nonroot pyproject.toml uv.lock ./
 RUN uv sync --locked --no-install-project && rm -rf /tmp/uv-cache
 
-# Application source.
-COPY --chown=nonroot:nonroot . /app
-
 # Writable runtime dirs: the ChromaDB vector store and the HuggingFace model
 # cache. Both are mounted as volumes by docker-compose so they survive restarts.
+# /app/backend is created here too, then shadowed by the ./backend bind mount.
 RUN mkdir -p /app/backend/chroma_db /app/.cache/huggingface
 
 # app.py resolves "../docs" and "../frontend" relative to this directory.
@@ -41,7 +41,6 @@ WORKDIR /app/backend
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/courses')"]
-
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Plain uvicorn (no [standard] extra) => StatReload, a polling reloader that works
+# over Colima's sshfs mount where inotify events don't propagate.
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

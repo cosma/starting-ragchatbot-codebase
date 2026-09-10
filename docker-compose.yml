@@ -1,13 +1,22 @@
 services:
   rag:
-    build: .
-    image: course-rag:latest
+    # Dev image: dependencies only, no app code baked in (see Dockerfile.dev).
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: course-rag:dev
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      # Persist the ChromaDB vector store across container restarts.
+      # Live-mount the app code so host edits take effect without a rebuild
+      # (uvicorn runs with --reload). Dependencies live in the image's venv at
+      # /app/.venv, which these mounts do not touch.
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      # Persist the ChromaDB vector store across container restarts. Mounts on top
+      # of the ./backend bind mount at a deeper path, so both coexist.
       - chroma_data:/app/backend/chroma_db
       # Cache the downloaded embedding model so it's fetched only once.
       - hf_cache:/app/.cache/huggingface

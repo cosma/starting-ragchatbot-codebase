@@ -8,6 +8,13 @@ tech
 *.swp
 *.swo
 
+# Docker build/orchestration files — not needed inside the image
+Dockerfile
+Dockerfile.dev
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
 # Secrets — provided at runtime via env_file / environment
 .env
 backend/.env
