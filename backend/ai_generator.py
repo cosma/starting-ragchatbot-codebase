@@ -1,5 +1,7 @@
+from typing import List, Optional
+
 import anthropic
-from typing import List, Optional, Dict, Any
+
 
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
@@ -34,22 +36,22 @@ All responses must be:
 4. **Example-supported** - Include relevant examples when they aid understanding
 Provide only the direct answer to what was asked.
 """
-    
+
     def __init__(self, api_key: str, model: str):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
+
         # Pre-build base API parameters
         # (newer Claude models reject the `temperature` param, so it's omitted)
-        self.base_params = {
-            "model": self.model,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+        self.base_params = {"model": self.model, "max_tokens": 800}
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
         Supports up to 2 sequential rounds of tool calling.
@@ -75,12 +77,10 @@ Provide only the direct answer to what was asked.
 
         # Loop for up to 2 rounds of tool use, then one final text-only round
         for round_num in range(1, self.MAX_TOOL_ROUNDS + 2):
-            offer_tools = bool(tools) and tool_manager is not None and round_num <= self.MAX_TOOL_ROUNDS
-            api_params = {
-                **self.base_params,
-                "messages": messages,
-                "system": system_content
-            }
+            offer_tools = (
+                bool(tools) and tool_manager is not None and round_num <= self.MAX_TOOL_ROUNDS
+            )
+            api_params = {**self.base_params, "messages": messages, "system": system_content}
             if offer_tools:
                 api_params["tools"] = tools
                 api_params["tool_choice"] = {"type": "auto"}
@@ -102,7 +102,7 @@ Provide only the direct answer to what was asked.
             **{**self.base_params, "messages": messages, "system": system_content}
         )
         return final_response.content[0].text
-    
+
     def _execute_tools(self, content_blocks: List, tool_manager) -> tuple:
         """
         Execute all tool calls from a response and collect results.
@@ -127,10 +127,6 @@ Provide only the direct answer to what was asked.
                 result = f"Tool execution failed: {e}"
                 error_occurred = True
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": result
-            })
+            tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
 
         return tool_results, error_occurred

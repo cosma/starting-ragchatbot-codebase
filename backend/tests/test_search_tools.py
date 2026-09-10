@@ -1,6 +1,4 @@
-import pytest
 from search_tools import CourseSearchTool, ToolManager
-from vector_store import VectorStore
 
 
 class TestCourseSearchToolExecute:
@@ -39,7 +37,7 @@ class TestCourseSearchToolExecute:
         store = populated_vector_store(max_results=5)
         tool = CourseSearchTool(store)
 
-        result = tool.execute(query="mitochondria")
+        tool.execute(query="mitochondria")
 
         assert tool.last_sources
         assert len(tool.last_sources) > 0
@@ -57,10 +55,7 @@ class TestCourseSearchToolExecute:
         store = populated_vector_store(max_results=5)
         tool = CourseSearchTool(store)
 
-        result = tool.execute(
-            query="photosynthesis",
-            course_name="NonexistentCourse XYZ"
-        )
+        result = tool.execute(query="photosynthesis", course_name="NonexistentCourse XYZ")
 
         assert "No course found" in result
 
@@ -72,10 +67,7 @@ class TestCourseSearchToolExecute:
         store = populated_vector_store(max_results=5)
         tool = CourseSearchTool(store)
 
-        result = tool.execute(
-            query="photosynthesis",
-            course_name="Biology"
-        )
+        result = tool.execute(query="photosynthesis", course_name="Biology")
 
         assert "No relevant content found" not in result
         assert "No course found" not in result
@@ -89,10 +81,7 @@ class TestCourseSearchToolExecute:
         store = populated_vector_store(max_results=5)
         tool = CourseSearchTool(store)
 
-        result = tool.execute(
-            query="mitochondria",
-            lesson_number=1
-        )
+        result = tool.execute(query="mitochondria", lesson_number=1)
 
         # Mitochondria is in lesson 1, so should find it
         assert "No relevant content found" not in result
