@@ -3,6 +3,9 @@ from unittest.mock import MagicMock, patch
 from ai_generator import AIGenerator
 
 
+pytestmark = pytest.mark.unit
+
+
 class TestAIGeneratorToolCalling:
     """Test AIGenerator's tool-calling behavior with support for up to 2 sequential rounds."""
 

@@ -8,6 +8,9 @@ from session_manager import SessionManager
 from search_tools import ToolManager, CourseSearchTool, CourseOutlineTool
 
 
+pytestmark = pytest.mark.integration
+
+
 class TestRAGSystemConfigRegression:
     """Regression test: MAX_RESULTS must be > 0."""
 

@@ -3,6 +3,9 @@ from search_tools import CourseSearchTool, ToolManager
 from vector_store import VectorStore
 
 
+pytestmark = pytest.mark.unit
+
+
 class TestCourseSearchToolExecute:
     """Test CourseSearchTool.execute() behavior with different VectorStore configs."""
 

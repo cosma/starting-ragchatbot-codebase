@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest==8.3.4",
+    "pytest-asyncio==0.23.2",
 ]
 
 # The only torch use here is CPU inference for sentence-transformers embeddings.
@@ -35,3 +36,15 @@ explicit = true
 
 [tool.pytest.ini_options]
 pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for multiple components",
+    "api: API endpoint tests",
+    "slow: Slow running tests",
+]
+minversion = "8.0"
