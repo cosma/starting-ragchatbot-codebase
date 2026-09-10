@@ -5,7 +5,7 @@ const API_URL = '/api';
 let currentSessionId = null;
 
 // DOM elements
-let chatMessages, chatInput, sendButton, totalCourses, courseTitles;
+let chatMessages, chatInput, sendButton, totalCourses, courseTitles, newChatButton;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     sendButton = document.getElementById('sendButton');
     totalCourses = document.getElementById('totalCourses');
     courseTitles = document.getElementById('courseTitles');
-    
+    newChatButton = document.getElementById('newChatButton');
+
     setupEventListeners();
     createNewSession();
     loadCourseStats();
@@ -28,8 +29,11 @@ function setupEventListeners() {
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
-    
-    
+
+    // New chat
+    newChatButton.addEventListener('click', startNewChat);
+
+
     // Suggested questions
     document.querySelectorAll('.suggested-item').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -122,20 +126,10 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     let html = `<div class="message-content">${displayContent}</div>`;
     
     if (sources && sources.length > 0) {
-        const sourcesHtml = sources.map(source => {
-            // Tolerate the old plain-string shape as well as {text, link}
-            const { text, link } = typeof source === 'string'
-                ? { text: source, link: null }
-                : source;
-            const label = escapeHtml(text);
-            return link
-                ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${label}</a>`
-                : label;
-        }).join(', ');
         html += `
             <details class="sources-collapsible">
                 <summary class="sources-header">Sources</summary>
-                <div class="sources-content">${sourcesHtml}</div>
+                <div class="sources-content">${renderSources(sources)}</div>
             </details>
         `;
     }
@@ -154,12 +148,65 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Render the Sources section: dedupe, group by course, show lessons as pill links
+function renderSources(sources) {
+    const seen = new Set();
+    const groups = new Map();
+
+    for (const source of sources) {
+        // Tolerate the old plain-string shape as well as {text, link}
+        const { text, link } = typeof source === 'string'
+            ? { text: source, link: null }
+            : source;
+        if (!text) continue;
+
+        const dedupeKey = `${text}|${link || ''}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+
+        const match = text.match(/^(.*?)\s*-\s*Lesson\s+(\d+)$/i);
+        const course = match ? match[1] : text;
+        const label = match ? `Lesson ${match[2]}` : text;
+
+        if (!groups.has(course)) groups.set(course, []);
+        groups.get(course).push({ label, link });
+    }
+
+    return Array.from(groups.entries()).map(([course, entries]) => {
+        const pills = entries.map(({ label, link }) => {
+            const safeLabel = escapeHtml(label);
+            return link
+                ? `<a class="source-pill" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
+                : `<span class="source-pill">${safeLabel}</span>`;
+        }).join('');
+        return `<div class="source-group">
+                    <div class="source-course">${escapeHtml(course)}</div>
+                    <div class="source-pills">${pills}</div>
+                </div>`;
+    }).join('');
+}
+
 // Removed removeMessage function - no longer needed since we handle loading differently
 
 async function createNewSession() {
     currentSessionId = null;
     chatMessages.innerHTML = '';
     addMessage('Welcome to the Course Materials Assistantttt! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
+}
+
+// Tear down the current session (frontend + backend) and start a fresh one in place
+async function startNewChat() {
+    const oldSessionId = currentSessionId;
+    if (oldSessionId) {
+        try {
+            await fetch(`${API_URL}/session/${oldSessionId}`, { method: 'DELETE' });
+        } catch (error) {
+            console.error('Failed to clear session on server:', error);
+        }
+    }
+    createNewSession();
+    chatInput.value = '';
+    chatInput.focus();
 }
 
 // Load course statistics
