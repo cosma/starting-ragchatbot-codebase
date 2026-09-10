@@ -82,3 +82,69 @@ docker run --rm -p 8000:8000 --env-file .env \
   course-rag
 ```
 
+## Testing
+
+The project includes a comprehensive test suite to verify RAG system functionality and prevent regressions.
+
+### Quick Diagnostic (No Heavy Dependencies)
+
+Run a fast diagnostic that confirms the system configuration and identifies issues:
+
+```bash
+python3 backend/tests/test_bug_diagnosis.py
+```
+
+This diagnostic:
+- Verifies `Config.MAX_RESULTS` is set to a reasonable value (not 0)
+- Traces the bug flow end-to-end
+- Runs without requiring ChromaDB or heavy ML dependencies
+
+### Full Test Suite (Requires `uv sync`)
+
+Install test dependencies:
+```bash
+uv add --dev pytest
+```
+
+Run all tests:
+```bash
+cd backend
+uv run pytest tests/ -v
+```
+
+Run specific test file:
+```bash
+cd backend
+uv run pytest tests/test_search_tools.py -v
+```
+
+Run specific test:
+```bash
+cd backend
+uv run pytest tests/test_rag_system.py::TestRAGSystemConfigRegression::test_config_max_results_is_positive -v
+```
+
+### Test Suite Overview
+
+| Test File | Purpose |
+|-----------|---------|
+| `test_search_tools.py` | Unit tests for `CourseSearchTool.execute()` — verifies search returns content when configured correctly |
+| `test_ai_generator.py` | Tests `AIGenerator` tool-calling behavior — ensures one-round-trip constraint, correct tool invocation |
+| `test_rag_system.py` | End-to-end integration tests with mocked AI — validates complete query flow, includes regression test for `MAX_RESULTS` |
+| `test_bug_diagnosis.py` | Static analysis diagnostic — runnable without dependencies, confirms config is correct |
+
+### What the Tests Catch
+
+- ✓ Content queries return empty results when `MAX_RESULTS=0`
+- ✓ Content queries return real search results when configured correctly
+- ✓ Tool-calling doesn't loop beyond one round (one-round-trip constraint)
+- ✓ `CourseSearchTool` populates sources correctly
+- ✓ Filtering by course name and lesson number works
+- ✓ Session history tracking functions properly
+
+### Known Issue (Already Fixed)
+
+The system was previously broken when `Config.MAX_RESULTS` was set to 0. This caused ChromaDB to be queried with `n_results=0`, always returning empty results. The config has been fixed to `MAX_RESULTS: int = 5` (matching `VectorStore`'s default). The test suite includes a regression test to prevent this bug from being re-introduced.
+
+For details on the investigation, see [`TEST_REPORT.md`](TEST_REPORT.md) and [`TESTING_SUMMARY.md`](TESTING_SUMMARY.md).
+
