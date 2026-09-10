@@ -3,8 +3,8 @@ Diagnosis script that shows the bug by static code analysis.
 Run with: python3 backend/tests/test_bug_diagnosis.py
 """
 
-import sys
 import os
+import sys
 
 # Add backend to path so we can import config
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -18,7 +18,7 @@ def test_config_max_results_is_zero():
 
     config = Config()
     print(f"\n[TEST 1] Config.MAX_RESULTS value: {config.MAX_RESULTS}")
-    print(f"          Expected: > 0")
+    print("          Expected: > 0")
     print(f"          Result: {'FAIL ❌' if config.MAX_RESULTS == 0 else 'PASS ✓'}")
 
     assert config.MAX_RESULTS != 0, (
@@ -34,6 +34,7 @@ def test_vector_store_search_uses_config_max_results():
     as n_results when no explicit limit is provided.
     """
     import inspect
+
     from vector_store import VectorStore
 
     print("\n[TEST 2] Checking VectorStore.search() implementation...")
@@ -69,6 +70,7 @@ def test_course_search_tool_returns_no_content_when_empty():
     and returns a "no content" message.
     """
     import inspect
+
     from search_tools import CourseSearchTool
 
     print("\n[TEST 4] Checking CourseSearchTool.execute() implementation...")
@@ -79,7 +81,9 @@ def test_course_search_tool_returns_no_content_when_empty():
     checks_is_empty = "results.is_empty()" in source
 
     print(f"          Checks for empty results: {'✓' if checks_is_empty else '❌'}")
-    print(f"          Returns 'No relevant content found' on empty: {'✓' if returns_empty else '❌'}")
+    print(
+        f"          Returns 'No relevant content found' on empty: {'✓' if returns_empty else '❌'}"
+    )
     print(f"          Result: {'PASS ✓' if (checks_is_empty and returns_empty) else 'FAIL ❌'}")
 
     assert checks_is_empty, "CourseSearchTool.execute() doesn't check is_empty()"
@@ -90,9 +94,9 @@ def test_bug_flow_diagram():
     """
     Print the bug flow for clarity.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("BUG FLOW DIAGRAM")
-    print("="*70)
+    print("=" * 70)
     print("""
 1. Config.MAX_RESULTS = 0  <- THE ROOT CAUSE (backend/config.py:23)
                     |
@@ -136,9 +140,9 @@ to return results, fixing all content-related queries.
 
 
 if __name__ == "__main__":
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("RAG CHATBOT BUG DIAGNOSIS: Content Queries Return 'Query Failed'")
-    print("="*70)
+    print("=" * 70)
 
     try:
         test_config_max_results_is_zero()
@@ -150,7 +154,7 @@ if __name__ == "__main__":
         test_vector_store_search_uses_config_max_results()
     except (AssertionError, ModuleNotFoundError) as e:
         if isinstance(e, ModuleNotFoundError):
-            print(f"\n          (Skipping chromadb import checks due to dependency setup)")
+            print("\n          (Skipping chromadb import checks due to dependency setup)")
         else:
             print(f"\n❌ IMPLEMENTATION CHECK FAILED:\n{e}")
             sys.exit(1)
@@ -161,17 +165,17 @@ if __name__ == "__main__":
         test_course_search_tool_returns_no_content_when_empty()
     except (AssertionError, ModuleNotFoundError) as e:
         if isinstance(e, ModuleNotFoundError):
-            print(f"          (Skipping module checks due to dependency setup)")
+            print("          (Skipping module checks due to dependency setup)")
         else:
             print(f"\n❌ TOOL CHECK FAILED:\n{e}")
             sys.exit(1)
 
     test_bug_flow_diagram()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("DIAGNOSIS COMPLETE - FIX APPLIED")
-    print("="*70)
+    print("=" * 70)
     print("\n✓ Root Cause FIXED: Config.MAX_RESULTS changed from 0 to 5")
     print("✓ Impact: Content queries will now return results")
     print("✓ Location: backend/config.py line 23")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")

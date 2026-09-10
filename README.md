@@ -82,6 +82,71 @@ docker run --rm -p 8000:8000 --env-file .env \
   course-rag
 ```
 
+## Code Quality
+
+The project uses modern Python development tools to maintain code quality and consistency.
+
+### Development Tools
+
+- **Black** — Automatic code formatting for consistent style (line length: 100 characters)
+- **Ruff** — Fast Python linter for code quality checks (unused imports, style issues, etc.)
+- **Pytest** — Testing framework for comprehensive test suite
+
+### Running Quality Checks
+
+Convenient shell scripts are provided in the `scripts/` directory:
+
+#### Format Code with Black
+```bash
+bash scripts/format.sh
+```
+Automatically formats all Python code in `backend/` and the project root.
+
+#### Check Formatting (without making changes)
+```bash
+bash scripts/check-format.sh
+```
+Verifies that code matches Black's formatting style. Useful in CI/CD pipelines.
+
+#### Run Linter
+```bash
+bash scripts/lint.sh
+```
+Runs Ruff to check for style issues, unused imports, and potential bugs.
+
+#### Run Tests
+```bash
+bash scripts/test.sh
+```
+Executes the full pytest test suite.
+
+#### Run All Quality Checks
+```bash
+bash scripts/quality.sh
+```
+Runs formatting check, linting, and tests in sequence. Provides a comprehensive quality report.
+
+### Manual Quality Tool Usage
+
+If you prefer to run tools directly:
+
+```bash
+# Format with Black
+uv run black backend main.py
+
+# Format with Black (with custom line length)
+uv run black backend main.py --line-length 100
+
+# Check formatting without changes
+uv run black backend main.py --check
+
+# Run Ruff linter
+uv run ruff check backend main.py
+
+# Fix common linting issues automatically
+uv run ruff check backend main.py --fix
+```
+
 ## Testing
 
 The project includes a comprehensive test suite to verify RAG system functionality and prevent regressions.

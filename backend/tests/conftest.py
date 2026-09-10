@@ -1,12 +1,8 @@
-import pytest
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock
-import anthropic.types as types
-from vector_store import VectorStore
-from document_processor import DocumentProcessor
-from config import Config
 
+import pytest
+from document_processor import DocumentProcessor
+from vector_store import VectorStore
 
 TINY_COURSE_TEXT = """Course Title: Biology 101
 Course Link: https://example.com/biology
@@ -38,12 +34,11 @@ def populated_vector_store(tmp_path):
     Create and populate a VectorStore with test data using real DocumentProcessor.
     Yields a factory function so tests can override max_results.
     """
+
     def _create_store(max_results: int = 5) -> VectorStore:
         chroma_path = str(tmp_path / f"chroma_test_{max_results}")
         store = VectorStore(
-            chroma_path=chroma_path,
-            embedding_model="all-MiniLM-L6-v2",
-            max_results=max_results
+            chroma_path=chroma_path, embedding_model="all-MiniLM-L6-v2", max_results=max_results
         )
 
         # Write course text to temp file and ingest it

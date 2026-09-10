@@ -1,11 +1,9 @@
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 from config import Config
-from rag_system import RAGSystem
-from vector_store import VectorStore
 from document_processor import DocumentProcessor
+from rag_system import RAGSystem
 from session_manager import SessionManager
-from search_tools import ToolManager, CourseSearchTool, CourseOutlineTool
 
 
 class TestRAGSystemConfigRegression:
@@ -23,7 +21,9 @@ class TestRAGSystemConfigRegression:
 class TestRAGSystemContentQueries:
     """Test RAGSystem's end-to-end handling of content queries with mocked AI."""
 
-    def test_content_query_with_zero_max_results_returns_no_content(self, tmp_path, populated_vector_store, mock_anthropic_response_builders):
+    def test_content_query_with_zero_max_results_returns_no_content(
+        self, tmp_path, populated_vector_store, mock_anthropic_response_builders
+    ):
         """
         Reproduces the bug at the RAGSystem level: with max_results=0,
         content queries return empty results even though content exists.
@@ -34,17 +34,14 @@ class TestRAGSystemContentQueries:
         session_mgr = SessionManager(max_history=2)
 
         rag = RAGSystem(
-            vector_store=store,
-            document_processor=processor,
-            session_manager=session_mgr
+            vector_store=store, document_processor=processor, session_manager=session_mgr
         )
 
         # Mock the Anthropic client so it issues a real tool call
         with patch.object(rag.ai_generator.client, "messages.create") as mock_create:
             # First call: Claude requests a search
             tool_use_response = mock_anthropic_response_builders["tool_use"](
-                tool_name="search_course_content",
-                tool_input={"query": "photosynthesis"}
+                tool_name="search_course_content", tool_input={"query": "photosynthesis"}
             )
 
             # Second call: Claude's final response (would normally incorporate the empty tool result)
@@ -59,7 +56,9 @@ class TestRAGSystemContentQueries:
             # With max_results=0, the tool should return empty
             assert "no content" in answer.lower() or "no relevant" in answer.lower()
 
-    def test_content_query_with_sane_max_results_returns_content(self, tmp_path, populated_vector_store, mock_anthropic_response_builders):
+    def test_content_query_with_sane_max_results_returns_content(
+        self, tmp_path, populated_vector_store, mock_anthropic_response_builders
+    ):
         """
         Test that with a sane max_results value, the same query returns actual content.
         """
@@ -68,15 +67,12 @@ class TestRAGSystemContentQueries:
         session_mgr = SessionManager(max_history=2)
 
         rag = RAGSystem(
-            vector_store=store,
-            document_processor=processor,
-            session_manager=session_mgr
+            vector_store=store, document_processor=processor, session_manager=session_mgr
         )
 
         with patch.object(rag.ai_generator.client, "messages.create") as mock_create:
             tool_use_response = mock_anthropic_response_builders["tool_use"](
-                tool_name="search_course_content",
-                tool_input={"query": "photosynthesis"}
+                tool_name="search_course_content", tool_input={"query": "photosynthesis"}
             )
 
             final_response = mock_anthropic_response_builders["text"](
@@ -90,7 +86,9 @@ class TestRAGSystemContentQueries:
             # The final answer should mention photosynthesis (from the mocked second response)
             assert "photosynthesis" in answer.lower()
 
-    def test_query_returns_sources(self, tmp_path, populated_vector_store, mock_anthropic_response_builders):
+    def test_query_returns_sources(
+        self, tmp_path, populated_vector_store, mock_anthropic_response_builders
+    ):
         """
         Test that RAGSystem.query() returns sources from successful tool calls.
         """
@@ -99,15 +97,12 @@ class TestRAGSystemContentQueries:
         session_mgr = SessionManager(max_history=2)
 
         rag = RAGSystem(
-            vector_store=store,
-            document_processor=processor,
-            session_manager=session_mgr
+            vector_store=store, document_processor=processor, session_manager=session_mgr
         )
 
         with patch.object(rag.ai_generator.client, "messages.create") as mock_create:
             tool_use_response = mock_anthropic_response_builders["tool_use"](
-                tool_name="search_course_content",
-                tool_input={"query": "mitochondria"}
+                tool_name="search_course_content", tool_input={"query": "mitochondria"}
             )
 
             final_response = mock_anthropic_response_builders["text"](
@@ -125,7 +120,9 @@ class TestRAGSystemContentQueries:
                 assert "text" in source
                 assert "link" in source
 
-    def test_session_history_tracks_exchanges(self, tmp_path, populated_vector_store, mock_anthropic_response_builders):
+    def test_session_history_tracks_exchanges(
+        self, tmp_path, populated_vector_store, mock_anthropic_response_builders
+    ):
         """
         Test that RAGSystem tracks conversation history per session.
         """
@@ -134,15 +131,12 @@ class TestRAGSystemContentQueries:
         session_mgr = SessionManager(max_history=2)
 
         rag = RAGSystem(
-            vector_store=store,
-            document_processor=processor,
-            session_manager=session_mgr
+            vector_store=store, document_processor=processor, session_manager=session_mgr
         )
 
         with patch.object(rag.ai_generator.client, "messages.create") as mock_create:
             tool_use_response = mock_anthropic_response_builders["tool_use"](
-                tool_name="search_course_content",
-                tool_input={"query": "test"}
+                tool_name="search_course_content", tool_input={"query": "test"}
             )
 
             final_response = mock_anthropic_response_builders["text"]("Test answer")
