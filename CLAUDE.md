@@ -28,8 +28,6 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 - Web UI: http://localhost:8000
 - API docs (Swagger): http://localhost:8000/docs
 
-There is no test suite, linter, or build step configured in this repo currently.
-
 Run in a container (needs `.env` with `ANTHROPIC_API_KEY` at the project root):
 ```bash
 docker compose up --build   # first run / after dependency changes
@@ -41,6 +39,85 @@ There are **two Dockerfiles**:
 - `Dockerfile` — production image, copies the code in (`COPY . /app`), no `--reload`, self-contained. Not used by compose; build explicitly: `docker build -f Dockerfile -t course-rag:prod .`.
 
 Both are single-stage `uv` builds (single-stage on purpose — the target Docker VM has only 2 GiB RAM and a multi-stage venv copy OOM-crashed it; a heavy `docker compose up --build` while other Docker work runs can still OOM the VM). Lines 8-27 of the two files are kept byte-identical so the heavy `uv sync` layer is shared from the build cache. The embedding model downloads on first start into the `hf_cache` volume; ChromaDB persists in `chroma_data`; `./docs` is bind-mounted for ingestion.
+
+## Quality Tools & Linting
+
+The project uses Black for formatting and Ruff for linting, configured in `pyproject.toml` with line length 100.
+
+### Quick Commands (via scripts)
+
+Convenient shell scripts are provided in `scripts/`:
+
+```bash
+# Format all code
+bash scripts/format.sh
+
+# Check formatting without changes
+bash scripts/check-format.sh
+
+# Run linter
+bash scripts/lint.sh
+
+# Run all checks (format check, lint, tests)
+bash scripts/quality.sh
+```
+
+### Manual Commands
+
+```bash
+# Format with Black
+uv run black backend main.py
+
+# Check formatting without changes
+uv run black backend main.py --check
+
+# Run Ruff linter
+uv run ruff check backend main.py
+
+# Fix common issues automatically
+uv run ruff check backend main.py --fix
+```
+
+## Testing
+
+The project includes a comprehensive pytest test suite in `backend/tests/`.
+
+### Quick Diagnostic (No Dependencies)
+
+Run a fast configuration diagnostic:
+
+```bash
+python3 backend/tests/test_bug_diagnosis.py
+```
+
+Verifies `Config.MAX_RESULTS` is set correctly and traces the query flow.
+
+### Full Test Suite
+
+```bash
+# Run all tests
+cd backend
+uv run pytest tests/ -v
+
+# Run specific test file
+uv run pytest tests/test_search_tools.py -v
+
+# Run specific test with markers
+uv run pytest tests/ -v -m integration
+```
+
+### Via Script
+
+```bash
+bash scripts/test.sh
+```
+
+Test files:
+- `test_bug_diagnosis.py` — Static config verification (no heavy deps)
+- `test_search_tools.py` — Unit tests for search functionality
+- `test_ai_generator.py` — Tool-calling behavior and one-round-trip constraint
+- `test_rag_system.py` — End-to-end integration tests
+- `test_api_endpoints.py` — FastAPI endpoint tests
 
 ## Development conventions
 
