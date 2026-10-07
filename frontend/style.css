@@ -77,14 +77,6 @@ header {
     gap: 1rem;
 }
 
-header h1 {
-    display: none;
-}
-
-.subtitle {
-    display: none;
-}
-
 /* Theme Toggle Button */
 .theme-toggle {
     display: flex;
@@ -814,10 +806,6 @@ details[open] .suggested-header::before {
     
     header {
         padding: 1rem;
-    }
-    
-    header h1 {
-        font-size: 1.5rem;
     }
     
     .chat-messages {
